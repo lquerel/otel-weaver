@@ -86,6 +86,9 @@ pub(crate) struct TargetConfig {
     #[serde(default)]
     pub(crate) params: HashMap<String, Value>,
 
+    /// An optional catalog of reusable named filters.
+    pub(crate) filter_catalog: Option<HashMap<String, NamedFilter>>,
+
     /// Configuration for the templates.
     #[serde(default = "default_templates")]
     pub(crate) templates: Vec<TemplateConfig>,
@@ -217,6 +220,21 @@ pub(crate) struct TemplateConfig {
 
 fn default_filter() -> String {
     ".".to_owned()
+}
+
+/// A named filter description.
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "snake_case")]
+#[serde(tag = "type")]
+#[non_exhaustive]
+pub(crate) enum NamedFilter {
+    Jq {
+        /// The JQ filter description.
+        description: String,
+        /// The JQ filter expression.
+        expression: String,
+    },
+    // Can be extended with other filter types (e.g. WASM, Python).
 }
 
 /// A template matcher.

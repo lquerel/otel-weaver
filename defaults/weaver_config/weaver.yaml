@@ -1,0 +1,113 @@
+# This file contains the default configuration used by Weaver.
+#
+# Weaver allows local configuration for a particular target as well as global
+# configuration. It looks for configuration files in the target directory, the
+# parent directory (i.e., the directory containing all the targets), the
+# `$HOME/.weaver/weaver.yaml` directory, and finally in the
+# `defaults/weaver_config` directory (embedded in the Weaver binary). A local
+# definition overrides the corresponding definition that may be present in the
+# parent directory, which itself may redefine the corresponding entry in the
+# home directory (i.e., defined per user), and finally in the Weaver application
+# binary (i.e., defined by Weaver authors). With this structure, we can specify
+# configuration per target, for all targets, and even reuse a configuration
+# defined in the binary of the Weaver application.
+
+filter_catalog:
+  extract_registry_attribute_groups:
+    type: jq
+    description: >
+      Extracts the id, type, brief, and prefix of groups matching the following criteria:
+      - groups with an id starting with the prefix `registry.`
+      - groups of the type `attribute_group`.
+      - groups are deduplicated by namespace.
+      - groups are sorted by namespace.
+    expression: >
+      if $attributes then
+        .groups
+        | map(select(.id | startswith($registry_prefix)))
+        | map(select(.type == "attribute_group")    
+          | { 
+            id, 
+            type, 
+            brief, 
+            prefix})
+        | unique_by(.id | split(".") | .[1])
+        | sort_by(.id | split(".") | .[1])
+      else
+        empty
+      end
+
+  extract_registry_attribute_groups_with_attributes:
+    type: jq
+    description: >
+      Extracts the id, type, brief, prefix, and attributes of groups matching the following criteria:
+      - groups with an id starting with the prefix `registry.`
+      - groups of the type `attribute_group`.
+      - groups are sorted by namespace.
+    expression: >
+      if $attributes then
+        .groups 
+        | map(select(.id | startswith($registry_prefix))) 
+        | map(select(.type == "attribute_group") 
+          | { 
+            id, 
+            type, 
+            brief, 
+            prefix, 
+            attributes}) 
+        | group_by(.id | split(".") | .[1]) 
+        | map({
+            id: (map(select(.id | endswith(".deprecated") | not)) | first).id,
+            type: (map(select(.id | endswith(".deprecated") | not)) | first).type,
+            brief: (map(select(.id | endswith(".deprecated") | not)) | first).brief,
+            prefix: (map(select(.id | endswith(".deprecated") | not)) | first).prefix,
+            attributes: map(.attributes) | add
+          })
+        | sort_by(.id | split(".") | .[1])
+      else
+        empty
+      end
+
+  extract_metric_groups:
+    type: jq
+    description: >
+      Extracts the id, type, brief, and prefix of groups matching the following criteria:
+      - groups with an id starting with the prefix `metric.`
+      - groups of the type `metric`.
+      - groups are deduplicated by namespace.
+      - groups are sorted by prefix.
+    expression: >
+      if $metrics then
+        .groups
+        | map(select(.id | startswith("metric."))) 
+        | map(select(.type == "metric")    
+          | { 
+            id, 
+            type, 
+            brief, 
+            prefix})
+        | unique_by(.id | split(".") | .[1])
+        | sort_by(.id | split(".") | .[1])
+      else
+        empty
+      end
+
+  extract_metric_groups_with_prefix:
+    type: jq
+    description: >
+      Extracts the id, type, brief, prefix, and attributes of groups matching the following criteria:
+      - groups with an id starting with the prefix `metric.`
+      - groups of the type `metric`.
+      - groups are sorted by namespace.
+    expression: >
+      if $metrics then
+        .groups 
+        | map(select(.id | startswith("metric."))) 
+        | group_by(.id | split(".") | .[1]) 
+        | map({ 
+          prefix: .[0].id | split(".") | .[1],
+          groups: .   
+        })
+      else
+        empty
+      end
