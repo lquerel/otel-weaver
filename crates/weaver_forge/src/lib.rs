@@ -642,9 +642,9 @@ mod tests {
     }
 
     #[test]
-    fn test() {
+    fn test_template_engine() {
         let logger = TestLogger::default();
-        let loader = FileSystemFileLoader::try_new("templates".into(), "test")
+        let loader = FileSystemFileLoader::try_new("templates/test".into())
             .expect("Failed to create file system loader");
         let mut engine = super::TemplateEngine::try_new(loader, Params::default())
             .expect("Failed to create template engine");
@@ -693,7 +693,7 @@ mod tests {
     #[test]
     fn test_whitespace_control() {
         let logger = TestLogger::default();
-        let loader = FileSystemFileLoader::try_new("whitespace_control_templates".into(), "test")
+        let loader = FileSystemFileLoader::try_new("whitespace_control_templates/test".into())
             .expect("Failed to create file system loader");
         let engine = super::TemplateEngine::try_new(loader, Params::default())
             .expect("Failed to create template engine");

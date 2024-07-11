@@ -7,12 +7,12 @@ use std::path::PathBuf;
 use clap::{Args, Parser};
 
 use registry::semconv_registry;
+use weaver_common::{ConsoleLogger, Logger};
 use weaver_common::diagnostic::DiagnosticMessages;
 use weaver_common::quiet::QuietLogger;
-use weaver_common::{ConsoleLogger, Logger};
+use weaver_forge::{OutputDirective, TemplateEngine};
 use weaver_forge::config::Params;
 use weaver_forge::file_loader::EmbeddedFileLoader;
-use weaver_forge::{OutputDirective, TemplateEngine};
 
 use crate::cli::{Cli, Commands};
 use crate::diagnostic::DEFAULT_DIAGNOSTIC_TEMPLATES;
@@ -133,10 +133,15 @@ fn process_diagnostics(
     if let Err(diagnostic_messages) = cmd_result.command_result {
         let loader = EmbeddedFileLoader::try_new(
             &DEFAULT_DIAGNOSTIC_TEMPLATES,
-            diagnostic_args.diagnostic_template,
             &diagnostic_args.diagnostic_format,
+            format!(
+                "{}/{}",
+                diagnostic_args.diagnostic_template.to_string_lossy(),
+                &diagnostic_args.diagnostic_format
+            )
+                .into(),
         )
-        .expect("Failed to create the embedded file loader for the diagnostic templates");
+            .expect("Failed to create the embedded file loader for the diagnostic templates");
         match TemplateEngine::try_new(loader, Params::default()) {
             Ok(engine) => {
                 match engine.generate(
