@@ -5,11 +5,13 @@
 use crate::Error::CompoundError;
 use miette::Diagnostic;
 use serde::Serialize;
+use std::path::PathBuf;
 use weaver_common::diagnostic::{DiagnosticMessage, DiagnosticMessages};
 use weaver_common::error::{format_errors, WeaverError};
 
 pub mod any_value;
 pub mod attribute;
+mod config;
 pub mod group;
 pub mod metric;
 pub mod registry;
@@ -140,6 +142,24 @@ pub enum Error {
         /// The id of the any_value
         value_id: String,
         /// The reason of the error.
+        error: String,
+    },
+
+    /// This error is raised when a registry configuration is not found.
+    #[error("The registry configuration at {path:?} is not found.")]
+    #[diagnostic(severity(Error))]
+    RegistryConfigNotFound {
+        /// The path to the registry configuration file.
+        path: PathBuf
+    },
+    
+    /// This error is raised when a registry configuration is invalid.
+    #[error("The registry configuration at {path:?} is invalid. {error}")]
+    #[diagnostic(severity(Error))]
+    InvalidRegistryConfig {
+        /// The path to the registry configuration file.
+        path: PathBuf,
+        /// The error that occurred.
         error: String,
     },
 

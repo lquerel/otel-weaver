@@ -1,0 +1,14 @@
+name: vendor_acme
+description: This registry contains the semantic conventions for the Acme vendor.
+version: 0.1.0
+owner:
+  name: ACME, Inc.
+  email: semconv-registry@acme.com
+  url: https://acme.com
+maintainers:
+  - name: John Doe
+    email: john.doe@acme.com
+dependencies:
+  - name: otel
+    version: 1.27.0
+    repository: https://github.com/open-telemetry/semantic-conventions/tree/main/registry-versions
