@@ -8,6 +8,8 @@
 use crate::Error;
 use crate::Error::{InvalidRegistryConfig, RegistryConfigNotFound};
 use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
+use weaver_common::error::handle_errors;
 
 /// Represents the configuration of a semantic conventions registry.
 ///
@@ -22,6 +24,7 @@ pub struct RegistryConfig {
     ///
     /// This field can be used to provide additional context or information about the registry's
     /// purpose and contents.
+    /// The format of the description is markdown.
     pub description: Option<String>,
 
     /// The version of the registry which will be used to define the package version.
@@ -98,30 +101,152 @@ impl RegistryConfig {
     /// The expected file format is YAML.
     pub fn try_from_file<P: AsRef<std::path::Path>>(path: P) -> Result<Self, Error> {
         let config_path_buf = path.as_ref().to_path_buf();
-        
+
         if !config_path_buf.exists() {
             return Err(RegistryConfigNotFound {
                 path: config_path_buf.clone(),
             });
         }
-        
+
         let file = std::fs::File::open(path).map_err(|e| InvalidRegistryConfig {
             path: config_path_buf.clone(),
             error: e.to_string(),
         })?;
         let reader = std::io::BufReader::new(file);
-        let config = serde_yaml::from_reader(reader).map_err(|e| InvalidRegistryConfig {
+        let config: RegistryConfig = serde_yaml::from_reader(reader).map_err(|e| InvalidRegistryConfig {
             path: config_path_buf.clone(),
             error: e.to_string(),
         })?;
 
+        config.validate(config_path_buf.clone())?;
+
         Ok(config)
+    }
+
+    fn validate(&self, path: PathBuf) -> Result<(), Error> {
+        let mut errors = vec![];
+
+        if self.name.is_empty() {
+            errors.push(InvalidRegistryConfig {
+                path: path.clone(),
+                error: "The registry name is required.".to_string(),
+            })
+        }
+
+        if self.version.is_empty() {
+            errors.push(InvalidRegistryConfig {
+                path: path.clone(),
+                error: "The registry version is required.".to_string(),
+            })
+        }
+
+        self.owner.validate(path.clone(), "owner", &mut errors)?;
+
+        for maintainer in &self.maintainers {
+            maintainer.validate(path.clone(), "maintainer", &mut errors)?;
+        }
+
+        for dependency in &self.dependencies {
+            dependency.validate(path.clone(), &mut errors)?;
+        }
+
+        handle_errors(errors)?;
+
+        Ok(())
+    }
+}
+
+impl RegistryContact {
+    fn validate(&self, path: PathBuf, contact_type: &str, errors: &mut Vec<Error>) -> Result<(), Error> {
+        if self.name.is_empty() {
+            errors.push(InvalidRegistryConfig {
+                path: path.clone(),
+                error: format!("The {} name is required.", contact_type),
+            });
+        }
+
+        // Check if the email is a valid email address.
+        // This is a simple check to ensure the email contains an '@' symbol.
+        // A more robust check would require a more complex regular expression and could be added
+        // later.
+        if let Some(email) = &self.email {
+            if !email.contains('@') {
+                errors.push(InvalidRegistryConfig {
+                    path: path.clone(),
+                    error: format!("The {} email is not a valid email address (invalid email: {}).", contact_type, email),
+                });
+            }
+        }
+
+        // Check if the URL is a valid URL.
+        // This is a simple check to ensure the URL starts with 'http://' or 'https://'.
+        // A more robust check would require a more complex regular expression and could be added
+        // later.
+        if let Some(url) = &self.url {
+            if !url.starts_with("http://") && !url.starts_with("https://") {
+                errors.push(InvalidRegistryConfig {
+                    path: path.clone(),
+                    error: format!("The {} URL is not a valid URL (invalid url: {}).", contact_type, url),
+                });
+            }
+        }
+
+        Ok(())
+    }
+}
+
+impl RegistryDependency {
+    fn validate(&self, path: PathBuf, errors: &mut Vec<Error>) -> Result<(), Error> {
+        if self.name.is_empty() {
+            errors.push(InvalidRegistryConfig {
+                path: path.clone(),
+                error: "The dependency name is required.".to_string(),
+            });
+        }
+
+        if self.version.is_empty() {
+            errors.push(InvalidRegistryConfig {
+                path: path.clone(),
+                error: "The dependency version is required.".to_string(),
+            });
+        }
+
+        if self.repository.is_empty() {
+            errors.push(InvalidRegistryConfig {
+                path: path.clone(),
+                error: "The dependency repository URL is required.".to_string(),
+            });
+        }
+
+        // Check if the URL is a valid URL.
+        // This is a simple check to ensure the URL starts with 'http://' or 'https://'.
+        // A more robust check would require a more complex regular expression and could be added
+        // later.
+        if !self.repository.starts_with("http://") && !self.repository.starts_with("https://") {
+            errors.push(InvalidRegistryConfig {
+                path: path.clone(),
+                error: "The dependency repository URL is not a valid URL.".to_string(),
+            });
+        }
+
+        // `:` is not allowed in the alias.
+        if let Some(alias) = &self.alias {
+            if alias.contains(':') {
+                errors.push(InvalidRegistryConfig {
+                    path: path.clone(),
+                    error: "The dependency alias cannot contain a colon (':').".to_string(),
+                });
+            }
+        }
+
+        Ok(())
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::Error::CompoundError;
 
     #[test]
     fn test_not_found_registry_config() {
@@ -130,8 +255,8 @@ mod tests {
     }
 
     #[test]
-    fn test_invalid_registry_config() {
-        let result = RegistryConfig::try_from_file("tests/test_data/invalid_semconv_registry.yaml");
+    fn test_incomplete_registry_config() {
+        let result = RegistryConfig::try_from_file("tests/test_data/incomplete_semconv_registry.yaml");
         assert!(matches!(result, Err(InvalidRegistryConfig { path, .. }) if path.ends_with("invalid_semconv_registry.yaml")));
     }
 
@@ -141,5 +266,66 @@ mod tests {
             .expect("Failed to load the registry configuration file.");
         assert_eq!(config.name, "vendor_acme");
         assert_eq!(config.version, "0.1.0");
+    }
+
+    #[test]
+    fn test_invalid_registry_config() {
+        let result = RegistryConfig::try_from_file("tests/test_data/invalid_semconv_registry.yaml");
+        let path = PathBuf::from("tests/test_data/invalid_semconv_registry.yaml");
+
+        let expected_errs = CompoundError(
+            vec![
+                InvalidRegistryConfig {
+                    path: path.clone(),
+                    error: "The registry name is required.".to_owned(),
+                },
+                InvalidRegistryConfig {
+                    path: path.clone(),
+                    error: "The registry version is required.".to_owned(),
+                },
+                InvalidRegistryConfig {
+                    path: path.clone(),
+                    error: "The owner name is required.".to_owned(),
+                },
+                InvalidRegistryConfig {
+                    path: path.clone(),
+                    error: "The owner email is not a valid email address (invalid email: semconv-registryacme.com).".to_owned(),
+                },
+                InvalidRegistryConfig {
+                    path: path.clone(),
+                    error: "The owner URL is not a valid URL (invalid url: acme.com).".to_owned(),
+                },
+                InvalidRegistryConfig {
+                    path: path.clone(),
+                    error: "The maintainer name is required.".to_owned(),
+                },
+                InvalidRegistryConfig {
+                    path: path.clone(),
+                    error: "The maintainer email is not a valid email address (invalid email: john.doeacme.com).".to_owned(),
+                },
+                InvalidRegistryConfig {
+                    path: path.clone(),
+                    error: "The dependency name is required.".to_owned(),
+                },
+                InvalidRegistryConfig {
+                    path: path.clone(),
+                    error: "The dependency version is required.".to_owned(),
+                },
+                InvalidRegistryConfig {
+                    path: path.clone(),
+                    error: "The dependency repository URL is not a valid URL.".to_owned(),
+                },
+                InvalidRegistryConfig {
+                    path: path.clone(),
+                    error: "The dependency alias cannot contain a colon (':').".to_owned(),
+                },
+            ],
+        );
+
+        if let Err(observed_errs) = result {
+            assert_eq!(observed_errs, expected_errs);
+        } else {
+            panic!("Expected an error, but got a result.");
+        }
     }
 }

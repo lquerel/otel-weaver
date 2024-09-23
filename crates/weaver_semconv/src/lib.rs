@@ -152,7 +152,7 @@ pub enum Error {
         /// The path to the registry configuration file.
         path: PathBuf
     },
-    
+
     /// This error is raised when a registry configuration is invalid.
     #[error("The registry configuration at {path:?} is invalid. {error}")]
     #[diagnostic(severity(Error))]

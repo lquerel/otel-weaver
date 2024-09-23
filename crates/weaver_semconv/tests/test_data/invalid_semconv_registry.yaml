@@ -1,9 +1,15 @@
-# This an invalid semconv registry config file because the version and owner fields are missing.
-name: vendor_acme
+name: 
+description: This registry contains the semantic conventions for the Acme vendor.
+version: 
+owner:
+  name: 
+  email: semconv-registryacme.com
+  url: acme.com
 maintainers:
-  - name: John Doe
-    email: john.doe@acme.com
+  - name: 
+    email: john.doeacme.com
 dependencies:
-  - name: otel
-    version: 1.27.0
-    repository: https://github.com/open-telemetry/semantic-conventions/tree/main/registry-versions
+  - name: 
+    version: 
+    repository: github.com/open-telemetry/semantic-conventions/tree/main/registry-versions
+    alias: otel:1.27.0
