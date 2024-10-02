@@ -150,7 +150,7 @@ pub enum Error {
     #[diagnostic(severity(Error))]
     RegistryConfigNotFound {
         /// The path to the registry configuration file.
-        path: PathBuf
+        path: PathBuf,
     },
 
     /// This error is raised when a registry configuration is invalid.

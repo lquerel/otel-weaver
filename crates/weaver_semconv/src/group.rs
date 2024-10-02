@@ -336,6 +336,20 @@ impl Default for GroupType {
     }
 }
 
+impl Display for GroupType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            GroupType::AttributeGroup => write!(f, "attribute_group"),
+            GroupType::Span => write!(f, "span"),
+            GroupType::Event => write!(f, "event"),
+            GroupType::Metric => write!(f, "metric"),
+            GroupType::MetricGroup => write!(f, "metric_group"),
+            GroupType::Resource => write!(f, "resource"),
+            GroupType::Scope => write!(f, "scope"),
+        }
+    }
+}
+
 /// The span kind.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, JsonSchema)]
 #[serde(rename_all = "snake_case")]

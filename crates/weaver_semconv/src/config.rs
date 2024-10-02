@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
-//! Contains the definitions for the semantic conventions registry configuration.
+//! Contains the definitions for the semantic conventions registry information.
 //!
-//! These structs are used to configure the registry, including its name, version,
+//! These structs are used to specify the registry, including its name, version,
 //! dependencies, and contact information for owners and maintainers.
 
 use crate::Error;
@@ -11,12 +11,12 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use weaver_common::error::handle_errors;
 
-/// Represents the configuration of a semantic conventions registry.
+/// Represents the information of a semantic conventions registry.
 ///
-/// This configuration defines the registry's name, version, and dependencies, along with
+/// This information defines the registry's name, version, and dependencies, along with
 /// contact information for the registry's owner and maintainers.
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct RegistryConfig {
+pub struct RegistryInfo {
     /// The name of the registry. This name is used to define the package name.
     pub name: String,
 
@@ -95,8 +95,8 @@ pub struct RegistryDependency {
     pub alias: Option<String>,
 }
 
-impl RegistryConfig {
-    /// Attempts to load a registry configuration from a file.
+impl RegistryInfo {
+    /// Attempts to load registry information from a file.
     ///
     /// The expected file format is YAML.
     pub fn try_from_file<P: AsRef<std::path::Path>>(path: P) -> Result<Self, Error> {
@@ -113,10 +113,11 @@ impl RegistryConfig {
             error: e.to_string(),
         })?;
         let reader = std::io::BufReader::new(file);
-        let config: RegistryConfig = serde_yaml::from_reader(reader).map_err(|e| InvalidRegistryConfig {
-            path: config_path_buf.clone(),
-            error: e.to_string(),
-        })?;
+        let config: RegistryInfo =
+            serde_yaml::from_reader(reader).map_err(|e| InvalidRegistryConfig {
+                path: config_path_buf.clone(),
+                error: e.to_string(),
+            })?;
 
         config.validate(config_path_buf.clone())?;
 
@@ -129,15 +130,15 @@ impl RegistryConfig {
         if self.name.is_empty() {
             errors.push(InvalidRegistryConfig {
                 path: path.clone(),
-                error: "The registry name is required.".to_string(),
-            })
+                error: "The registry name is required.".to_owned(),
+            });
         }
 
         if self.version.is_empty() {
             errors.push(InvalidRegistryConfig {
                 path: path.clone(),
-                error: "The registry version is required.".to_string(),
-            })
+                error: "The registry version is required.".to_owned(),
+            });
         }
 
         self.owner.validate(path.clone(), "owner", &mut errors)?;
@@ -157,7 +158,12 @@ impl RegistryConfig {
 }
 
 impl RegistryContact {
-    fn validate(&self, path: PathBuf, contact_type: &str, errors: &mut Vec<Error>) -> Result<(), Error> {
+    fn validate(
+        &self,
+        path: PathBuf,
+        contact_type: &str,
+        errors: &mut Vec<Error>,
+    ) -> Result<(), Error> {
         if self.name.is_empty() {
             errors.push(InvalidRegistryConfig {
                 path: path.clone(),
@@ -173,7 +179,10 @@ impl RegistryContact {
             if !email.contains('@') {
                 errors.push(InvalidRegistryConfig {
                     path: path.clone(),
-                    error: format!("The {} email is not a valid email address (invalid email: {}).", contact_type, email),
+                    error: format!(
+                        "The {} email is not a valid email address (invalid email: {}).",
+                        contact_type, email
+                    ),
                 });
             }
         }
@@ -186,7 +195,10 @@ impl RegistryContact {
             if !url.starts_with("http://") && !url.starts_with("https://") {
                 errors.push(InvalidRegistryConfig {
                     path: path.clone(),
-                    error: format!("The {} URL is not a valid URL (invalid url: {}).", contact_type, url),
+                    error: format!(
+                        "The {} URL is not a valid URL (invalid url: {}).",
+                        contact_type, url
+                    ),
                 });
             }
         }
@@ -200,21 +212,21 @@ impl RegistryDependency {
         if self.name.is_empty() {
             errors.push(InvalidRegistryConfig {
                 path: path.clone(),
-                error: "The dependency name is required.".to_string(),
+                error: "The dependency name is required.".to_owned(),
             });
         }
 
         if self.version.is_empty() {
             errors.push(InvalidRegistryConfig {
                 path: path.clone(),
-                error: "The dependency version is required.".to_string(),
+                error: "The dependency version is required.".to_owned(),
             });
         }
 
         if self.repository.is_empty() {
             errors.push(InvalidRegistryConfig {
                 path: path.clone(),
-                error: "The dependency repository URL is required.".to_string(),
+                error: "The dependency repository URL is required.".to_owned(),
             });
         }
 
@@ -225,7 +237,7 @@ impl RegistryDependency {
         if !self.repository.starts_with("http://") && !self.repository.starts_with("https://") {
             errors.push(InvalidRegistryConfig {
                 path: path.clone(),
-                error: "The dependency repository URL is not a valid URL.".to_string(),
+                error: "The dependency repository URL is not a valid URL.".to_owned(),
             });
         }
 
@@ -234,7 +246,7 @@ impl RegistryDependency {
             if alias.contains(':') {
                 errors.push(InvalidRegistryConfig {
                     path: path.clone(),
-                    error: "The dependency alias cannot contain a colon (':').".to_string(),
+                    error: "The dependency alias cannot contain a colon (':').".to_owned(),
                 });
             }
         }
@@ -249,28 +261,33 @@ mod tests {
     use crate::Error::CompoundError;
 
     #[test]
-    fn test_not_found_registry_config() {
-        let result = RegistryConfig::try_from_file("tests/test_data/missing_registry.yaml");
-        assert!(matches!(result, Err(RegistryConfigNotFound { path, .. }) if path.ends_with("missing_registry.yaml")));
+    fn test_not_found_registry_info() {
+        let result = RegistryInfo::try_from_file("tests/test_data/missing_registry.yaml");
+        assert!(
+            matches!(result, Err(RegistryConfigNotFound { path, .. }) if path.ends_with("missing_registry.yaml"))
+        );
     }
 
     #[test]
-    fn test_incomplete_registry_config() {
-        let result = RegistryConfig::try_from_file("tests/test_data/incomplete_semconv_registry.yaml");
-        assert!(matches!(result, Err(InvalidRegistryConfig { path, .. }) if path.ends_with("invalid_semconv_registry.yaml")));
+    fn test_incomplete_registry_info() {
+        let result =
+            RegistryInfo::try_from_file("tests/test_data/incomplete_semconv_registry.yaml");
+        assert!(
+            matches!(result, Err(InvalidRegistryConfig { path, .. }) if path.ends_with("incomplete_semconv_registry.yaml"))
+        );
     }
 
     #[test]
-    fn test_valid_registry_config() {
-        let config = RegistryConfig::try_from_file("tests/test_data/semconv_registry.yaml")
+    fn test_valid_registry_info() {
+        let config = RegistryInfo::try_from_file("tests/test_data/semconv_registry.yaml")
             .expect("Failed to load the registry configuration file.");
         assert_eq!(config.name, "vendor_acme");
         assert_eq!(config.version, "0.1.0");
     }
 
     #[test]
-    fn test_invalid_registry_config() {
-        let result = RegistryConfig::try_from_file("tests/test_data/invalid_semconv_registry.yaml");
+    fn test_invalid_registry_info() {
+        let result = RegistryInfo::try_from_file("tests/test_data/invalid_semconv_registry.yaml");
         let path = PathBuf::from("tests/test_data/invalid_semconv_registry.yaml");
 
         let expected_errs = CompoundError(

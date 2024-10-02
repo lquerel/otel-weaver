@@ -27,6 +27,7 @@ use crate::registry::resolve_semconv_registry;
 
 pub mod attribute;
 mod constraint;
+pub mod merge;
 pub mod registry;
 
 /// A resolver that can be used to resolve telemetry schemas.
