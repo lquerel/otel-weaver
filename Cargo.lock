@@ -6580,6 +6580,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "weaver_registry"
+version = "0.26.1"
+dependencies = [
+ "miette",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "tempfile",
+ "thiserror 2.0.20",
+ "weaver_common",
+ "weaver_resolved_schema",
+ "weaver_resolver",
+ "weaver_semconv",
+]
+
+[[package]]
 name = "weaver_resolved_schema"
 version = "0.26.1"
 dependencies = [

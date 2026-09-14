@@ -1,0 +1,102 @@
+file_format: definition/2
+attributes:
+  - key: demo.id
+    type: string
+    brief: Identifier.
+    stability: stable
+    examples: ["a", "b"]
+  - key: demo.count
+    type: int
+    brief: Count.
+    stability: stable
+    examples: [1, 2]
+  - key: demo.values
+    type: double[]
+    brief: Values.
+    stability: stable
+    examples: [[1.5, 2.5], [3.5]]
+  - key: demo.state
+    brief: State.
+    stability: stable
+    type:
+      members:
+        - id: ready
+          value: ready
+          brief: Ready.
+        - id: busy
+          value: busy
+          brief: Busy.
+  - key: demo.header
+    type: template[string]
+    brief: Header.
+    stability: stable
+    examples: ["value"]
+entities:
+  - type: entity.demo
+    requirement_level: recommended
+    brief: An entity.
+    stability: stable
+    identity:
+      - ref: demo.id
+    description:
+      - ref: demo.state
+metrics:
+  - name: metric.demo
+    requirement_level: recommended
+    brief: A metric.
+    stability: stable
+    instrument: counter
+    unit: "{request}"
+    annotations:
+      code_generation:
+        metric_value_type: int
+    attributes:
+      - ref: demo.count
+        requirement_level: opt_in
+      - ref: demo.values
+    entity_associations:
+      - all_of: [entity.demo]
+  - name: metric.other
+    requirement_level: recommended
+    brief: Another metric.
+    stability: stable
+    instrument: gauge
+    unit: "1"
+    attributes:
+      - ref: demo.count
+        examples: [9]
+spans:
+  - type: span.demo
+    requirement_level: recommended
+    kind: client
+    name:
+      note: A dynamic request name.
+    brief: A span.
+    stability: stable
+    attributes:
+      - ref: demo.header
+events:
+  - name: event.demo
+    requirement_level: recommended
+    brief: An event.
+    stability: stable
+    attributes:
+      - ref: demo.state
+metric_refinements:
+  - id: demo.metric.special
+    ref: metric.demo
+    attributes:
+      - ref: demo.count
+        examples: [42]
+span_refinements:
+  - id: demo.span.special
+    ref: span.demo
+    brief: A specialized span.
+event_refinements:
+  - id: demo.event.special
+    ref: event.demo
+    brief: A specialized event.
+entity_refinements:
+  - id: demo.entity.special
+    ref: entity.demo
+    brief: A specialized entity.

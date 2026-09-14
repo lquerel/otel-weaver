@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: Apache-2.0
+# The facade intentionally reuses the existing versioned schema types.
+allowed_external_types = [
+    "serde_core::ser::Serialize",
+    "miette::protocol::Diagnostic",
+    "weaver_common::*",
+    "weaver_resolver::error::Error",
+    "weaver_resolved_schema::*",
+    "weaver_semconv::*",
+]

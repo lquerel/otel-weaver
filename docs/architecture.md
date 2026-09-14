@@ -43,6 +43,7 @@ description and the current status of each crate:
 | [weaver_forge](/crates/weaver_forge/README.md)                     | Template engine used to generate artifacts from any serde json value | Alpha            |
 | [weaver_diff](/crates/weaver_diff/README.md)                       | Diffing tool to compare two versions of a text (used in unit tests)  | Alpha            |
 | [weaver_resolved_schema](/crates/weaver_resolved_schema/README.md) | Resolved Schema Data Model                                           | Work-In-Progress |
+| [weaver_registry](/crates/weaver_registry/README.md)               | Public facade for loading and inspecting v1/v2 registries            | Experimental     |
 | [weaver_resolver](/crates/weaver_resolver/README.md)               | Telemetry Schema Resolution Process + Lineage                        | Work-In-Progress |
 | [weaver_checker](/crates/weaver_checker/README.md)                 | Policy engine to enforce policies on telemetry data                  | Work-In-Progress |
 | [weaver_emit](/crates/weaver_emit/README.md)                       | Emit OTLP signals generated from registries                          | Work-In-Progress |

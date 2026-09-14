@@ -1,0 +1,47 @@
+groups:
+  - id: registry.demo
+    type: attribute_group
+    brief: Demo attributes.
+    attributes:
+      - id: demo.id
+        type: string
+        brief: Identifier.
+        stability: stable
+        examples: ["a", "b"]
+      - id: demo.count
+        type: int
+        brief: Count.
+        stability: stable
+        examples: [1, 2]
+  - id: metric.demo.requests
+    type: metric
+    metric_name: demo.requests
+    brief: Request count.
+    stability: stable
+    instrument: counter
+    unit: "{request}"
+    attributes:
+      - ref: demo.count
+        requirement_level: opt_in
+  - id: span.demo.request
+    type: span
+    brief: A request.
+    stability: stable
+    span_kind: client
+    events: [demo.event]
+    attributes:
+      - ref: demo.id
+  - id: event.demo.event
+    type: event
+    name: demo.event
+    brief: A request event.
+    stability: stable
+    body:
+      type: string
+      id: message
+      brief: Message.
+      stability: stable
+      requirement_level: required
+      examples: ["hello"]
+    attributes:
+      - ref: demo.id
